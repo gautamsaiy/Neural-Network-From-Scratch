@@ -1,46 +1,42 @@
+from collections import OrderedDict
 import numpy as np
-from layers import *
+from parameter import Parameter
+from layers import Layer
+
 
 class NeuralNet:
     def __init__(self) -> None:
-        pass
+        self.training = True
+        self.parameters = OrderedDict()
 
     def forward(self, input):
         pass
 
-    def back(self):
-        pass
+    def add_parameter(self, name, param):
+        assert isinstance(name, str), "name must be of type str"
+        assert isinstance(param, Layer), "param must be of type Layer"
+        self.parameters[name] = param
 
-    def description():
-        pass
-
-
-class Sequential(NeuralNet):
-    def __init__(self) -> None:
-        self.layers = []
-        self.inputSize = None
-        self.outputSize = None
-    
-    def addLayer(self, layer: Layer):
-        if not isinstance(layer, Layer):
-            raise TypeError("Must add an object of type Layer")
-        if len(self.layers) == 0:
-            self.layers.append(layer)
-            self.inputSize = layer.inputSize
-            self.outputSize = layer.outputSize
+    def __setattr__(self, __name: str, __value) -> None:
+        if isinstance(__value, Layer):
+            self.add_parameter(__name, __value)
         else:
-            if self.outputSize != layer.inputSize:
-                raise ValueError("Input Size of {0} must be of size {1}".format(layer, self.outputSize))
-            else:
-                self.layers.append(layer)
-                self.outputSize = layer.outputSize
+            super().__setattr__(__name, __value)
+    
+    def __getattribute__(self, __name: str):
+        try:
+            return super().__getattribute__(__name)
+        except:
+            try:
+                return self.parameters[__name]
+            except:
+                raise AttributeError
 
-    def description(self):
-        desc = "Sequential(Architecture: {0}, Input Size: {1}, Output Size: {2})".format([str(layer) for layer in self.layers], self.inputSize, self.outputSize)
-        return desc
-
-    def forward(self, input):
-        for layer in self.layers:
-            input = layer(input)
-        return input
-
+    def __delattr__(self, __name: str) -> None:
+        if __name in self.parameters.keys():
+            del self.parameters[__name]
+        else:
+            super().__delattr__(__name)
+            
+    def __call__(self, input):
+        return self.forward(input)
