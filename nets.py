@@ -1,6 +1,4 @@
 from collections import OrderedDict
-import numpy as np
-from parameter import Parameter
 from layers import Layer
 
 
