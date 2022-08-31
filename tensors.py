@@ -29,9 +29,19 @@ class Tensor(np.ndarray):
         if self.requires_grad:
             self.grad += gradient
             if len(self.source) > 0:
-                source_gradients = self.grad_fn(self.source[0], self.source[1], gradient)
+                a = self.source[0].view(np.ndarray) if isinstance(self.source[0], np.ndarray) else self.source[0]
+                b = self.source[1].view(np.ndarray) if isinstance(self.source[1], np.ndarray) else self.source[1]
+                g = self.grad.view(np.ndarray) if isinstance(self.grad, np.ndarray) else self.grad
+                source_gradients = self.grad_fn(a, b, g)
                 for s, g in zip(self.source, source_gradients):
                     if isinstance(s, Tensor): s.backward(g)
+
+
+    def mean(self):
+        return self.sum() / self.size
+    
+    def sum(self):
+        return self._do_func(None, super().sum, grad_sum)
 
 
     def _change_resulting_type(self, other, new_type):
@@ -66,8 +76,8 @@ class Tensor(np.ndarray):
         return self._do_func(other, super().__mul__, grad_mul)
 
 
-    def __true_div__(self, other):
-        return self._do_func(other, super().__true_div__, grad_true_div)
+    def __truediv__(self, other):
+        return self._do_func(other, super().__truediv__, grad_truediv)
 
 
     def __pow__(self, other):
@@ -84,6 +94,20 @@ class Tensor(np.ndarray):
         self.requires_grad = False
         self.grad_fn = None
         self.grad = None
+
+    def __radd__(self, other):
+        return self.__add__(other)
+    
+    def __rsub__(self, other):
+        return self.__sub__(other)
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __rpow__(self, other):
+        return self._do_func(other, super().__rpow__, grad_rpow)
+    
+
 
     def __repr__(self):
         return 'Tensor({0}, requires_grad={1})'.format(super().__str__(), self.requires_grad)
